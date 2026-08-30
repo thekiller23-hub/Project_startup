@@ -1,3 +1,10 @@
+const SUPABASE_URL = "https://xruivxqjdblnorhromyv.supabase.co";
+const SUPABASE_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 const defaultData={
  settings:{heroTitle:"Premium Properties & Land, Curated.",heroText:"Discover thoughtfully selected homes, residential plots and commercial properties across Hyderabad — with direct, transparent guidance from VRV Estates.",agent:"Rahul Gabbeta",phone:"+91 9989698152",address:"Ramanthapur, Hyderabad, Telangana 500013"},
  properties:[
