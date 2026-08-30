@@ -42,19 +42,14 @@ function viewProperty(id){
 function closeProperty(){document.getElementById("propertyModal").classList.remove("show")}
 function bookVisit(id){let p=data.properties.find(x=>x.id==id);document.getElementById("propertyModalBody").innerHTML=`<div class="modal-head"><h2 style="font-size:35px">Book a <span>Site Visit</span></h2><button class="close" onclick="closeProperty()">×</button></div><p class="muted" style="margin-bottom:20px">${esc(p.title)}</p><form class="form" onsubmit="submitVisit(event,${id})"><div class="form-grid"><div class="field"><label>Name</label><input id="visitName" required></div><div class="field"><label>Phone</label><input id="visitPhone" required></div></div><div class="form-grid"><div class="field"><label>Date</label><input id="visitDate" required type="date"></div><div class="field"><label>Preferred time</label><input id="visitTime" required type="time"></div></div><button class="btn gold full">Request Site Visit</button></form>`}
 function submitVisit(e,id){e.preventDefault();data.enquiries.push({id:Date.now(),name:document.getElementById("visitName").value,phone:document.getElementById("visitPhone").value,message:"Site visit: "+data.properties.find(p=>p.id==id).title+" | "+document.getElementById("visitDate").value+" "+document.getElementById("visitTime").value,date:new Date().toLocaleString(),status:"New"});save();closeProperty();toast("Site visit request received.")}
-async function submitEnquiry(e) {
+async function submitEnquiry(e){
   e.preventDefault();
 
   const name = document.getElementById("enqName").value.trim();
   const phone = document.getElementById("enqPhone").value.trim();
   const message = document.getElementById("enqMsg").value.trim();
 
-  if (!name || !phone || !message) {
-    toast("Please fill all fields.");
-    return;
-  }
-
-  const { data: enquiry, error } = await supabaseClient
+  const { error } = await supabaseClient
     .from("enquiries")
     .insert([
       {
@@ -63,9 +58,7 @@ async function submitEnquiry(e) {
         message: message,
         status: "New"
       }
-    ])
-    .select()
-    .single();
+    ]);
 
   if (error) {
     console.error("Supabase enquiry error:", error);
@@ -73,20 +66,7 @@ async function submitEnquiry(e) {
     return;
   }
 
-  // Keep local copy for immediate UI compatibility
-  data.enquiries.push({
-    id: enquiry.id,
-    name: enquiry.name,
-    phone: enquiry.phone,
-    message: enquiry.message,
-    date: enquiry.date,
-    status: enquiry.status
-  });
-
-  save();
-
   e.target.reset();
-
   toast("Thank you — enquiry submitted.");
 }
 function openAdmin(){if(sessionStorage.getItem("vrvAdmin")==="1"){document.getElementById("adminOverlay").classList.add("show");adminTab("dashboard",document.querySelector('.sidebar button[data-tab="dashboard"]'))}else document.getElementById("loginOverlay").classList.add("show")}
