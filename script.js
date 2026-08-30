@@ -42,14 +42,78 @@ function viewProperty(id){
 function closeProperty(){document.getElementById("propertyModal").classList.remove("show")}
 function bookVisit(id){let p=data.properties.find(x=>x.id==id);document.getElementById("propertyModalBody").innerHTML=`<div class="modal-head"><h2 style="font-size:35px">Book a <span>Site Visit</span></h2><button class="close" onclick="closeProperty()">×</button></div><p class="muted" style="margin-bottom:20px">${esc(p.title)}</p><form class="form" onsubmit="submitVisit(event,${id})"><div class="form-grid"><div class="field"><label>Name</label><input id="visitName" required></div><div class="field"><label>Phone</label><input id="visitPhone" required></div></div><div class="form-grid"><div class="field"><label>Date</label><input id="visitDate" required type="date"></div><div class="field"><label>Preferred time</label><input id="visitTime" required type="time"></div></div><button class="btn gold full">Request Site Visit</button></form>`}
 function submitVisit(e,id){e.preventDefault();data.enquiries.push({id:Date.now(),name:document.getElementById("visitName").value,phone:document.getElementById("visitPhone").value,message:"Site visit: "+data.properties.find(p=>p.id==id).title+" | "+document.getElementById("visitDate").value+" "+document.getElementById("visitTime").value,date:new Date().toLocaleString(),status:"New"});save();closeProperty();toast("Site visit request received.")}
-function submitEnquiry(e){e.preventDefault();data.enquiries.push({id:Date.now(),name:document.getElementById("enqName").value,phone:document.getElementById("enqPhone").value,message:document.getElementById("enqMsg").value,date:new Date().toLocaleString(),status:"New"});save();e.target.reset();toast("Thank you — enquiry submitted.")}
+async function submitEnquiry(e) {
+  e.preventDefault();
+
+  const name = document.getElementById("enqName").value.trim();
+  const phone = document.getElementById("enqPhone").value.trim();
+  const message = document.getElementById("enqMsg").value.trim();
+
+  if (!name || !phone || !message) {
+    toast("Please fill all fields.");
+    return;
+  }
+
+  const { data: enquiry, error } = await supabaseClient
+    .from("enquiries")
+    .insert([
+      {
+        name: name,
+        phone: phone,
+        message: message,
+        status: "New"
+      }
+    ])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Supabase enquiry error:", error);
+    toast("Unable to submit enquiry.");
+    return;
+  }
+
+  // Keep local copy for immediate UI compatibility
+  data.enquiries.push({
+    id: enquiry.id,
+    name: enquiry.name,
+    phone: enquiry.phone,
+    message: enquiry.message,
+    date: enquiry.date,
+    status: enquiry.status
+  });
+
+  save();
+
+  e.target.reset();
+
+  toast("Thank you — enquiry submitted.");
+}
 function openAdmin(){if(sessionStorage.getItem("vrvAdmin")==="1"){document.getElementById("adminOverlay").classList.add("show");adminTab("dashboard",document.querySelector('.sidebar button[data-tab="dashboard"]'))}else document.getElementById("loginOverlay").classList.add("show")}
 function closeAdmin(){document.getElementById("adminOverlay").classList.remove("show")}
 function login(e){e.preventDefault();if(document.getElementById("adminUser").value==="admin"&&document.getElementById("adminPass").value==="rahul@11"){sessionStorage.setItem("vrvAdmin","1");document.getElementById("loginOverlay").classList.remove("show");openAdmin();toast("Welcome to VRV Admin")}else toast("Invalid login")}
 function logoutAdmin(){sessionStorage.removeItem("vrvAdmin");closeAdmin();toast("Logged out")}
-function adminTab(tab,el){
+async function loadEnquiries() {
+  const { data: enquiries, error } = await supabaseClient
+    .from("enquiries")
+    .select("*")
+    .order("date", { ascending: false });
+
+  if (error) {
+    console.error("Failed to load enquiries:", error);
+    toast("Could not load enquiries.");
+    return null;
+  }
+
+  data.enquiries = enquiries || [];
+  return data.enquiries;
+}
+async function adminTab(tab,el){
  document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));if(el)el.classList.add("active");
  let c=document.getElementById("adminContent");
+ if (tab === "dashboard" || tab === "enquiries") {
+  await loadEnquiries();
+}
  if(tab==="dashboard"){c.innerHTML=`<div class="eyebrow">Overview</div><h2 style="font-size:40px;margin:8px 0 25px">Good day, <span>VRV.</span></h2><div class="stats"><div class="stat">Properties<b>${data.properties.length}</b></div><div class="stat">Featured<b>${data.properties.filter(p=>p.featured).length}</b></div><div class="stat">Enquiries<b>${data.enquiries.length}</b></div><div class="stat">New<b>${data.enquiries.filter(e=>e.status==="New").length}</b></div></div><div class="card" style="padding:20px"><h3 class="serif" style="font-size:25px">Recent enquiries</h3><div style="overflow:auto;margin-top:12px">${enquiryTable(5)}</div></div>`}
  if(tab==="properties"){c.innerHTML=`<div class="section-head" style="margin-bottom:20px"><div><div class="eyebrow">Content management</div><h2 style="font-size:40px">Properties</h2></div><button class="btn gold" onclick="editProperty()">+ Add Property</button></div><div style="overflow:auto"><table class="admin-table"><thead><tr><th>Property</th><th>Location</th><th>Price</th><th>Featured</th><th>Actions</th></tr></thead><tbody>${data.properties.map(p=>`<tr><td><b>${esc(p.title)}</b><br><small class="muted">${esc(p.type)}</small></td><td>${esc(p.location)}</td><td>${esc(p.price)}</td><td>${p.featured?"Yes":"No"}</td><td><div class="admin-actions"><button class="smallbtn" onclick="editProperty(${p.id})">Edit</button><button class="smallbtn danger" onclick="deleteProperty(${p.id})">Delete</button></div></td></tr>`).join("")}</tbody></table></div>`}
  if(tab==="enquiries"){c.innerHTML=`<div class="eyebrow">Lead management</div><h2 style="font-size:40px;margin:8px 0 25px">Enquiries</h2><div style="overflow:auto"><table class="admin-table"><thead><tr><th>Name</th><th>Phone</th><th>Requirement</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody>${data.enquiries.map(x=>`<tr><td>${esc(x.name)}</td><td><a href="tel:${esc(x.phone)}">${esc(x.phone)}</a></td><td>${esc(x.message)}</td><td>${esc(x.date)}</td><td>${esc(x.status)}</td><td><button class="smallbtn danger" onclick="deleteEnquiry(${x.id})">Delete</button></td></tr>`).join("")||'<tr><td colspan="6">No enquiries yet.</td></tr>'}</tbody></table></div>`}
