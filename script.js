@@ -38,7 +38,7 @@ function submitVisit(e,id){e.preventDefault();data.enquiries.push({id:Date.now()
 function submitEnquiry(e){e.preventDefault();data.enquiries.push({id:Date.now(),name:document.getElementById("enqName").value,phone:document.getElementById("enqPhone").value,message:document.getElementById("enqMsg").value,date:new Date().toLocaleString(),status:"New"});save();e.target.reset();toast("Thank you — enquiry submitted.")}
 function openAdmin(){if(sessionStorage.getItem("vrvAdmin")==="1"){document.getElementById("adminOverlay").classList.add("show");adminTab("dashboard",document.querySelector('.sidebar button[data-tab="dashboard"]'))}else document.getElementById("loginOverlay").classList.add("show")}
 function closeAdmin(){document.getElementById("adminOverlay").classList.remove("show")}
-function login(e){e.preventDefault();if(document.getElementById("adminUser").value==="admin"&&document.getElementById("adminPass").value==="admin123"){sessionStorage.setItem("vrvAdmin","1");document.getElementById("loginOverlay").classList.remove("show");openAdmin();toast("Welcome to VRV Admin")}else toast("Invalid login")}
+function login(e){e.preventDefault();if(document.getElementById("adminUser").value==="admin"&&document.getElementById("adminPass").value==="rahul@11"){sessionStorage.setItem("vrvAdmin","1");document.getElementById("loginOverlay").classList.remove("show");openAdmin();toast("Welcome to VRV Admin")}else toast("Invalid login")}
 function logoutAdmin(){sessionStorage.removeItem("vrvAdmin");closeAdmin();toast("Logged out")}
 function adminTab(tab,el){
  document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));if(el)el.classList.add("active");
